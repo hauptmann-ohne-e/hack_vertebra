@@ -138,8 +138,8 @@ def main():
     optimizer = Adam(learning_rate=0.0005)
     loss = "categorical_crossentropy"
     metrics = ["accuracy",
-               tf.keras.metrics.AUC(curve="PR", name="APS"),
-               tf.keras.metrics.AUC(curve="ROC", name="ROC-AUC"),
+               tf.keras.metrics.AUC(curve="PR", name="APS", multi_label=True),
+               tf.keras.metrics.AUC(curve="ROC", name="ROC-AUC", multi_label=True),
                ]
 
     net.compile(optimizer=optimizer,
@@ -166,10 +166,10 @@ def main():
 
     # Prediction
     val_ids = list(test_generator.filenames)
+    print(val_ids)
 
-    val_ids = [elem.split('_')[0].split('/')[3] for elem in val_ids]
-    pred = test_generator.predict(test_generator, verbose=1)
-    df = pd.DataFrame(list(zip(val_ids, pred.reshape(-1).tolist())), columns=["ID", "Prediction"])
+    pred = net.predict(test_generator, verbose=1)
+    df = pd.DataFrame(list(zip(val_ids, np.argmax(pred, -1))), columns=["ID", "Prediction"])
     print(df.head())
     df.to_csv('result_for_fold_val.csv',
               index=False,
