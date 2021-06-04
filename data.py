@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 from keras_preprocessing.image import ImageDataGenerator
 
+from config import TRAINING_PATH, VALIDATION_PATH, TEST_PATH
+
 from tensorflow.keras.layers import Dense, Flatten, Conv2D
 from tensorflow.keras import Model
 
@@ -29,16 +31,13 @@ def main():
     np.set_printoptions(precision=3, suppress=True)
 
     # https://archive.ics.uci.edu/ml/datasets/Auto+MPG
-    url_train = r'F:\MOIN\hack_vertebra\Kiel-AI-Coding.Waterkant21.body-fractures-main\data\train\data.csv'
-    url_validation = r'F:\MOIN\hack_vertebra\Kiel-AI-Coding.Waterkant21.body-fractures-main\data\val\data.csv'
-    url_test = r'F:\MOIN\hack_vertebra\Kiel-AI-Coding.Waterkant21.body-fractures-main\data\test\data.csv'
     # column_names = ['img', 'grade']
 
-    dataset_train = pd.read_csv(url_train, na_values='?',
+    dataset_train = pd.read_csv(TRAINING_PATH, na_values='?',
                                 comment='\t', sep=',', skipinitialspace=True, header=0)
-    dataset_validation = pd.read_csv(url_validation, na_values='?',
+    dataset_validation = pd.read_csv(VALIDATION_PATH, na_values='?',
                                      comment='\t', sep=',', skipinitialspace=True, header=0)
-    dataset_test = pd.read_csv(url_test, na_values='?',
+    dataset_test = pd.read_csv(TEST_PATH, na_values='?',
                                comment='\t', sep=',', skipinitialspace=True, header=0)
 
     dataset_train.tail()
@@ -50,7 +49,7 @@ def main():
 
     train_generator = datagen.flow_from_dataframe(
         dataframe=dataset_train,
-        directory=url_train,
+        directory=TRAINING_PATH,
         x_col="img",
         y_col="grade",
         batch_size=32,
@@ -61,7 +60,7 @@ def main():
 
     valid_generator = datagen.flow_from_dataframe(
         dataframe=dataset_validation,
-        directory=url_validation,
+        directory=VALIDATION_PATH,
         x_col="img",
         y_col="grade",
         batch_size=32,
@@ -72,7 +71,7 @@ def main():
 
     test_generator = test_datagen.flow_from_dataframe(
         dataframe=dataset_test,
-        directory=url_test,
+        directory=TEST_PATH,
         x_col="img",
         y_col=None,
         batch_size=32,
