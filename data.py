@@ -1,13 +1,23 @@
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+from keras.applications.densenet import preprocess_input
 from keras_preprocessing.image import ImageDataGenerator
+from tensorflow.python.keras.optimizer_v2.adam import Adam
+from sklearn.utils import class_weight
 
 from config import CSV_TRAINING_PATH, CSV_VALIDATION_PATH, CSV_TEST_PATH, TEST_PATH, VALIDATION_PATH, TRAINING_PATH
 
+
+def pr_function(image):
+    img = np.array(image)
+    # img = preprocess_input(img)
+    print(np.max(img))
+    return img
+
+
 from tensorflow.keras.layers import Dense, Flatten, Conv2D
 from tensorflow.keras import Model
-
 
 # tf.keras.preprocessing.image_dataset_from_directory(
 #     directory,
@@ -28,11 +38,14 @@ from tensorflow.keras import Model
 
 import matplotlib.pyplot as plt
 
+from denseNK import create_denseNet
+
 
 def show_examples(generator, r, c):
     x, y = generator.next()
     image = x
     print(image.shape)
+    print(image[0])
     plt.figure(figsize=(20, 20))
     for i in range(0, (r * c)):
         plt.subplot(r, c, i + 1)
@@ -47,19 +60,30 @@ def main():
     # https://archive.ics.uci.edu/ml/datasets/Auto+MPG
     # column_names = ['img', 'grade']
 
-    dataset_train = pd.read_csv(CSV_TRAINING_PATH, na_values='?',
-                                comment='\t', sep=',', skipinitialspace=True, header=0)
-    dataset_validation = pd.read_csv(CSV_VALIDATION_PATH, na_values='?',
-                                     comment='\t', sep=',', skipinitialspace=True, header=0)
+    dataset_train = pd.read_csv(CSV_TRAINING_PATH,
+                                comment='\t', sep=',', skipinitialspace=True, header=0).dropna()
+    print(type(dataset_train))
+
+    dataset_train = pd.get_dummies(dataset_train, columns=['grade'])
+    dataset_validation = pd.read_csv(CSV_VALIDATION_PATH,
+                                     comment='\t', sep=',', skipinitialspace=True, header=0).dropna()
+    dataset_validation = pd.get_dummies(dataset_validation, columns=['grade'])
     dataset_test = pd.read_csv(CSV_TEST_PATH, na_values='?',
-                              comment='\t', sep=',', skipinitialspace=True, header=0)
+                               comment='\t', sep=',', skipinitialspace=True, header=0)
 
-    dataset_train.tail()
+    print("Class Distribution")
+    print(dataset_train.groupby('grade').count())
 
-    # print(dataset_train)
+    train_bsz = 32
+    epochs = 40
+    lr = 0.0005
 
-    datagen = ImageDataGenerator(rescale=1. / 65536.)
-    test_datagen = ImageDataGenerator(rescale=1. / 65536.)
+    datagen = ImageDataGenerator(#preprocessing_function=pr_function,
+                                 rescale=1. / 255.
+        )
+    test_datagen = ImageDataGenerator(#preprocessing_function=pr_function,
+                                      rescale=1. / 255.
+        )
 
     train_generator = datagen.flow_from_dataframe(
         dataframe=dataset_train,
@@ -67,50 +91,76 @@ def main():
         validate_filenames=False,
         x_col="img",
         y_col="grade",
-        batch_size=32,
+        batch_size=train_bsz,
         seed=42,
         shuffle=True,
         class_mode="raw",
-        color_mode="grayscale",
-        target_size=(32, 32))
+        color_mode="rgb",
+        target_size=(224, 224))
 
-    valid_generator = datagen.flow_from_dataframe(
+    val_generator = datagen.flow_from_dataframe(
         dataframe=dataset_validation,
         directory=VALIDATION_PATH,
         validate_filenames=False,
         x_col="img",
         y_col="grade",
-        batch_size=32,
+        batch_size=1,
         seed=42,
         shuffle=True,
         class_mode="raw",
-        color_mode="grayscale",
-        target_size=(32, 32))
+        color_mode="rgb",
+        target_size=(224, 224))
 
     test_generator = test_datagen.flow_from_dataframe(
         dataframe=dataset_test,
         directory=TEST_PATH,
         validate_filenames=False,
         x_col="img",
-        batch_size=32,
+        batch_size=1,
         seed=42,
         shuffle=True,
         class_mode=None,
-        color_mode="grayscale",
-        target_size=(32, 32))
-
-    # test_generator = test_datagen.flow_from_directory(
-    #     directory=TEST_PATH,
-    #     batch_size=32,
-    #     seed=42,
-    #     shuffle=False,
-    #     class_mode=None,
-    #     target_size=(32, 32))
-
-    # todo: clean data???
-    # dataset = dataset_train.dropna()
+        color_mode="rgb",
+        target_size=(224, 224))
 
     show_examples(train_generator, 3, 3)
+
+    class_weights = class_weight.compute_class_weight('balanced',
+                                                      np.unique(train_generator.labels.astype(int)),
+                                                      train_generator.labels.astype(int))
+    class_weights = dict(enumerate(np.array(class_weights)))
+
+    print("Class weights: {}".format(class_weights))
+
+    # Create a custom model
+    net = create_denseNet()
+
+    # Compile Model
+    optimizer = Adam(learning_rate=0.0005)
+    loss = "categorical_crossentropy"
+    metrics = ["accuracy",
+               #tf.keras.metrics.AUC(curve="PR", name="APS"),
+               # tf.keras.metrics.AUC(curve="ROC", name="ROC-AUC"),
+               ]
+
+    net.compile(optimizer=optimizer,
+                loss=loss,
+                metrics=metrics,
+                weighted_metrics=["accuracy"]
+                )
+
+    net.summary()
+
+    record = net.fit(train_generator,
+                     steps_per_epoch=train_generator.samples // train_bsz,
+                     validation_data=val_generator,
+                     validation_steps=val_generator.samples // val_generator.batch_size,
+                     epochs=epochs,
+                     verbose=1,
+                     class_weight=class_weights,
+                     shuffle=True,
+                     # callbacks=callbacks
+                     ).history
 
 
 if __name__ == '__main__':

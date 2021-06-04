@@ -13,25 +13,37 @@ from tensorflow.keras.optimizers import Adam, Adagrad, Nadam
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Conv2D, BatchNormalization, MaxPooling2D
 
 
-def create_denseNet(model_dict):
+def create_denseNet(use_imagenet: bool = True,
+                    input_shape: tuple = (224, 224, 3),
+                    trainable: bool = False,
+                    num_neurons: int = 256,
+                    dropout: float = 0.3):
+    """
+
+    :param use_imagenet:
+    :param input_shape:
+    :param trainable:
+    :param num_neurons:
+    :param dropout:
+    :return:
+    """
+
     weights = None
-    
-    if model_dict['use_imagenet']:
-        weights = model_dict['weights']
+
+    if use_imagenet:
+        weights = "imagenet"
 
     # load the Densenet121 without the Classification Layers, but with the pre-trained weights from the imagenet
     # dataset
     densenet_without_fc = DenseNet121(
         include_top=False,
         weights=weights,
-        input_shape=model_dict['input_shape'],
+        input_shape=input_shape,
     )
-
-    densenet_without_fc.summary()
 
     # -------------------------------------- Relative Good Model ---------------------------------------------------
 
-    if not model_dict['trainable']:
+    if not trainable:
         # freeze the layer in Densnet121
         for idx, layer in enumerate(densenet_without_fc.layers):
             if idx < 137:
@@ -40,14 +52,12 @@ def create_denseNet(model_dict):
     # Creating dictionary that maps layer names to the layers
     layer_dict = dict([(layer.name, layer) for layer in densenet_without_fc.layers])
 
-    x = layer_dict['pool3_pool'].output 
+    x = layer_dict['pool3_pool'].output
     x = Flatten()(x)
-    x = Dense(model_dict['num_neurons'], name='FC-Layer', activation='relu')(x)
-    if model_dict['dropout'] > 0:
-        print("You use dropout: {}".format(model_dict['dropout']))
-        x = Dropout(model_dict['dropout'])(x)
-    #preds = Dense(1, activation='sigmoid')(x) #TD For regression, we MUST NOT use activation here
-    preds = Dense(1)(x)
-    
+    x = Dense(units=num_neurons, name='FC-Layer', activation='relu')(x)
+    if dropout > 0.0:
+        x = Dropout(dropout)(x)
+    preds = Dense(4, activation="softmax")(x)
+
     custom_model = Model(inputs=densenet_without_fc.input, outputs=preds)
     return custom_model
