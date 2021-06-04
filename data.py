@@ -56,7 +56,7 @@ def main():
         batch_size=32,
         seed=42,
         shuffle=True,
-        class_mode="categorical",
+        class_mode="raw",
         target_size=(32, 32))
 
     valid_generator = datagen.flow_from_dataframe(
@@ -67,7 +67,7 @@ def main():
         batch_size=32,
         seed=42,
         shuffle=True,
-        class_mode="categorical",
+        class_mode="raw",
         target_size=(32, 32))
 
     test_generator = test_datagen.flow_from_dataframe(
