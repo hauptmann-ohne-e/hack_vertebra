@@ -13,6 +13,10 @@ from denseNK import create_denseNet
 from config import CSV_TRAINING_PATH, CSV_VALIDATION_PATH, CSV_TEST_PATH, TEST_PATH, VALIDATION_PATH, TRAINING_PATH, OUT_PATH
 from plotting import plotting_history_1, customize_axis_plotting
 
+from meanAveragePrecision import computeMeanAveragePrecision
+from sklearn.metrics import classification_report, multilabel_confusion_matrix
+
+
 def pr_function(image):
     img = np.array(image)
     print(np.max(img))
@@ -71,6 +75,10 @@ def main():
                                                       dataset_train['grade'].values.astype(int))
     class_weights = dict(enumerate(np.array(class_weights)))
 
+    #class_weights[1]*= 10.0;
+    #class_weights[2]*= 10.0;
+    #class_weights[3]*= 10.0;
+  
     dataset_train = pd.get_dummies(dataset_train, columns=['grade'])
     dataset_validation = pd.read_csv(CSV_VALIDATION_PATH,
                                      comment='\t', sep=',', skipinitialspace=True, header=0).dropna()
@@ -79,13 +87,13 @@ def main():
                                comment='\t', sep=',', skipinitialspace=True, header=0)
 
     train_bsz = 32
-    epochs = 20
+    epochs = 1
     lr = 0.0005
 
     train_datagen = ImageDataGenerator(  # preprocessing_function=pr_function,
         rescale=1. / 255.,
-        rotation_range=20,
-        #zoom_range=[1.3,1.7],
+        rotation_range=10,
+        zoom_range=0.1,
         brightness_range=[0.8,1.2],
     )
     val_test_datagen = ImageDataGenerator(  # preprocessing_function=pr_function,
@@ -136,7 +144,7 @@ def main():
     print("Class weights: {}".format(class_weights))
 
     # Create a custom model
-    net = create_denseNet()
+    net = create_denseNet(dropout=0.5)
 
     # Compile Model
     optimizer = Adam(learning_rate=0.0005)
@@ -144,11 +152,11 @@ def main():
     metrics = ["accuracy",
                tf.keras.metrics.AUC(curve="PR", name="APS", multi_label=True),
                tf.keras.metrics.AUC(curve="ROC", name="ROC-AUC", multi_label=True),
-               tf.keras.metrics.CategoricalAccuracy(),
-               tf.keras.metrics.TruePositives(),
-               tf.keras.metrics.TrueNegatives(),
-               tf.keras.metrics.FalsePositives(),
-               tf.keras.metrics.FalseNegatives()
+               #tf.keras.metrics.CategoricalAccuracy(),
+               #tf.keras.metrics.TruePositives(),
+               #tf.keras.metrics.TrueNegatives(),
+               #tf.keras.metrics.FalsePositives(),
+               #tf.keras.metrics.FalseNegatives()
                ]
 
     net.compile(optimizer=optimizer,
@@ -173,6 +181,22 @@ def main():
     plotting_history_1(record, os.path.join(OUT_PATH,"training.png"),
                        f=customize_axis_plotting("loss"))
 
+    val_generator.shuffle = False
+    test_Y = np.array([np.where(r == 1)[0][0] for r in val_generator.labels])
+    pred = net.predict(val_generator, verbose=1)
+    print(multilabel_confusion_matrix(test_Y, np.argmax(pred, -1)))
+
+    #print(np.average(test_Y-np.argmax(pred,-1)))
+    
+    t = pd.DataFrame(data=[test_Y,np.argmax(pred,-1),test_Y-np.argmax(pred,-1)]).transpose()
+    t.to_csv("t.csv")    
+
+    report = classification_report(test_Y, np.argmax(pred, -1), output_dict=True)
+    df = pd.DataFrame(report).transpose()
+    p = computeMeanAveragePrecision(test_Y, net.predict(val_generator))
+    df["Mean_average_percision"] = np.concatenate([p[1], np.array([-1, -1, p[0]])])
+    df.to_csv("results_on_val.csv")
+
     # Prediction
     val_ids = list(test_generator.filenames)
     #print(val_ids)
@@ -180,7 +204,7 @@ def main():
     pred = net.predict(test_generator, verbose=1)
     df = pd.DataFrame(list(zip(val_ids, np.argmax(pred, -1))), columns=["ID", "Prediction"])
     print(df.head())
-    df.to_csv('result_for_fold_val.csv',
+    df.to_csv('results.csv',
               index=False,
               header=False)
 

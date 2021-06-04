@@ -46,7 +46,7 @@ def create_denseNet(use_imagenet: bool = True,
     if not trainable:
         # freeze the layer in Densnet121
         for idx, layer in enumerate(densenet_without_fc.layers):
-            if idx < 137:
+            if idx < 137: #53
                 layer.trainable = False
 
     # Creating dictionary that maps layer names to the layers
