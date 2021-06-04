@@ -50,6 +50,7 @@ def main():
     train_generator = datagen.flow_from_dataframe(
         dataframe=dataset_train,
         directory=CSV_TRAINING_PATH,
+        validate_filenames=False,
         x_col="img",
         y_col="grade",
         batch_size=32,
@@ -61,6 +62,7 @@ def main():
     valid_generator = datagen.flow_from_dataframe(
         dataframe=dataset_validation,
         directory=CSV_VALIDATION_PATH,
+        validate_filenames=False,
         x_col="img",
         y_col="grade",
         batch_size=32,
