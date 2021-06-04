@@ -1,7 +1,7 @@
-numpy
-tensorflow
-pandas
-keras_preprocessing
-SimpleITK
-matplotlib
-scipy
+numpy~=1.19.5
+tensorflow~=2.5.0
+pandas~=1.2.4
+SimpleITK~=2.0.2
+matplotlib~=3.4.2
+Pillow~=8.2.0
+scipy~=1.6.3
