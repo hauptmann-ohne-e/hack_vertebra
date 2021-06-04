@@ -34,6 +34,9 @@ def get_shapes():
                 continue
             img = load_png(os.path.join(p, f))
             shapes.append(img.GetSize())
+
+            array = sitk.GetArrayFromImage(img)
+            print(array.ptp())
     return shapes
 
 
@@ -66,7 +69,7 @@ def central_pad_zero(image):
     array = np.array(img).astype(np.uint16)
     # array = np.resize(array, (x, y))
 
-    full_array = np.zeros(niklas_shape)
+    full_array = np.zeros(niklas_shape, dtype=np.uint16)
     start_index_x = int((niklas_shape[0] - array.shape[0])/2)
     start_index_y = int((niklas_shape[1] - array.shape[1])/2)
     stop_index_x = start_index_x + array.shape[0]
@@ -112,7 +115,7 @@ def resize_all():
             # Convert y to 16 bit unsigned integers.
             print(z.min())
             print(z.max())
-            y = (65535 * ((z - z.min()) / (z.max() - z.min()))).astype(np.uint16)
+            y = (255 * ((z - z.min()) / (z.max() - z.min()))).astype(np.uint8)
 
             # Use numpngw to write z as a color PNG.
             numpngw.write_png(outputImageFileName, y)
