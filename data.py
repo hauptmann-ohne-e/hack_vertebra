@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from keras_preprocessing.image import ImageDataGenerator
 
-from config import TRAINING_PATH, VALIDATION_PATH, TEST_PATH
+from config import CSV_TRAINING_PATH, CSV_VALIDATION_PATH, CSV_TEST_PATH, TEST_PATH
 
 from tensorflow.keras.layers import Dense, Flatten, Conv2D
 from tensorflow.keras import Model
@@ -33,12 +33,12 @@ def main():
     # https://archive.ics.uci.edu/ml/datasets/Auto+MPG
     # column_names = ['img', 'grade']
 
-    dataset_train = pd.read_csv(TRAINING_PATH, na_values='?',
+    dataset_train = pd.read_csv(CSV_TRAINING_PATH, na_values='?',
                                 comment='\t', sep=',', skipinitialspace=True, header=0)
-    dataset_validation = pd.read_csv(VALIDATION_PATH, na_values='?',
+    dataset_validation = pd.read_csv(CSV_VALIDATION_PATH, na_values='?',
                                      comment='\t', sep=',', skipinitialspace=True, header=0)
-    dataset_test = pd.read_csv(TEST_PATH, na_values='?',
-                               comment='\t', sep=',', skipinitialspace=True, header=0)
+    #dataset_test = pd.read_csv(TEST_PATH, na_values='?',
+    #                           comment='\t', sep=',', skipinitialspace=True, header=0)
 
     dataset_train.tail()
 
@@ -49,7 +49,7 @@ def main():
 
     train_generator = datagen.flow_from_dataframe(
         dataframe=dataset_train,
-        directory=TRAINING_PATH,
+        directory=CSV_TRAINING_PATH,
         x_col="img",
         y_col="grade",
         batch_size=32,
@@ -60,7 +60,7 @@ def main():
 
     valid_generator = datagen.flow_from_dataframe(
         dataframe=dataset_validation,
-        directory=VALIDATION_PATH,
+        directory=CSV_VALIDATION_PATH,
         x_col="img",
         y_col="grade",
         batch_size=32,
@@ -69,11 +69,8 @@ def main():
         class_mode="raw",
         target_size=(32, 32))
 
-    test_generator = test_datagen.flow_from_dataframe(
-        dataframe=dataset_test,
+    test_generator = test_datagen.flow_from_directory(
         directory=TEST_PATH,
-        x_col="img",
-        y_col=None,
         batch_size=32,
         seed=42,
         shuffle=False,
