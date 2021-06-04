@@ -62,7 +62,14 @@ def main():
 
     dataset_train = pd.read_csv(CSV_TRAINING_PATH,
                                 comment='\t', sep=',', skipinitialspace=True, header=0).dropna()
-    print(type(dataset_train))
+
+    print("Class Distribution")
+    print(dataset_train.groupby('grade').count())
+
+    class_weights = class_weight.compute_class_weight('balanced',
+                                                      np.unique(dataset_train['grade'].values),
+                                                      dataset_train['grade'].values.astype(int))
+    class_weights = dict(enumerate(np.array(class_weights)))
 
     dataset_train = pd.get_dummies(dataset_train, columns=['grade'])
     dataset_validation = pd.read_csv(CSV_VALIDATION_PATH,
@@ -71,26 +78,25 @@ def main():
     dataset_test = pd.read_csv(CSV_TEST_PATH, na_values='?',
                                comment='\t', sep=',', skipinitialspace=True, header=0)
 
-    print("Class Distribution")
-    print(dataset_train.groupby('grade').count())
+    print(dataset_train.head(200))
 
     train_bsz = 32
     epochs = 40
     lr = 0.0005
 
-    datagen = ImageDataGenerator(#preprocessing_function=pr_function,
-                                 rescale=1. / 255.
-        )
-    test_datagen = ImageDataGenerator(#preprocessing_function=pr_function,
-                                      rescale=1. / 255.
-        )
+    datagen = ImageDataGenerator(  # preprocessing_function=pr_function,
+        rescale=1. / 255.
+    )
+    test_datagen = ImageDataGenerator(  # preprocessing_function=pr_function,
+        rescale=1. / 255.
+    )
 
     train_generator = datagen.flow_from_dataframe(
         dataframe=dataset_train,
         directory=TRAINING_PATH,
         validate_filenames=False,
         x_col="img",
-        y_col="grade",
+        y_col=["grade_0.0", "grade_1.0", "grade_2.0", "grade_3.0"],
         batch_size=train_bsz,
         seed=42,
         shuffle=True,
@@ -103,7 +109,7 @@ def main():
         directory=VALIDATION_PATH,
         validate_filenames=False,
         x_col="img",
-        y_col="grade",
+        y_col=["grade_0.0", "grade_1.0", "grade_2.0", "grade_3.0"],
         batch_size=1,
         seed=42,
         shuffle=True,
@@ -125,10 +131,6 @@ def main():
 
     show_examples(train_generator, 3, 3)
 
-    class_weights = class_weight.compute_class_weight('balanced',
-                                                      np.unique(train_generator.labels.astype(int)),
-                                                      train_generator.labels.astype(int))
-    class_weights = dict(enumerate(np.array(class_weights)))
 
     print("Class weights: {}".format(class_weights))
 
@@ -139,7 +141,7 @@ def main():
     optimizer = Adam(learning_rate=0.0005)
     loss = "categorical_crossentropy"
     metrics = ["accuracy",
-               #tf.keras.metrics.AUC(curve="PR", name="APS"),
+               # tf.keras.metrics.AUC(curve="PR", name="APS"),
                # tf.keras.metrics.AUC(curve="ROC", name="ROC-AUC"),
                ]
 
