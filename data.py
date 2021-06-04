@@ -36,7 +36,7 @@ def show_examples(generator, r, c):
     plt.figure(figsize=(20, 20))
     for i in range(0, (r * c)):
         plt.subplot(r, c, i + 1)
-    plt.imshow(image[i])
+        plt.imshow(image[i])
     plt.show()
 
 
@@ -71,6 +71,7 @@ def main():
         seed=42,
         shuffle=True,
         class_mode="raw",
+        color_mode="grayscale",
         target_size=(32, 32))
 
     valid_generator = datagen.flow_from_dataframe(
@@ -83,6 +84,7 @@ def main():
         seed=42,
         shuffle=True,
         class_mode="raw",
+        color_mode="grayscale",
         target_size=(32, 32))
 
     test_generator = test_datagen.flow_from_dataframe(
@@ -94,6 +96,7 @@ def main():
         seed=42,
         shuffle=True,
         class_mode=None,
+        color_mode="grayscale",
         target_size=(32, 32))
 
     # test_generator = test_datagen.flow_from_directory(

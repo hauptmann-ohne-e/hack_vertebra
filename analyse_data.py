@@ -29,6 +29,7 @@ def get_shapes():
 
     return shapes
 
+
 a = get_shapes()
 a_arr = np.array(a)
 plt.hist2d(a_arr[:, 0], a_arr[:, 1])
