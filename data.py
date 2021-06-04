@@ -3,8 +3,6 @@ import pandas as pd
 import numpy as np
 from keras_preprocessing.image import ImageDataGenerator
 
-
-
 from config import CSV_TRAINING_PATH, CSV_VALIDATION_PATH, CSV_TEST_PATH, TEST_PATH, VALIDATION_PATH, TRAINING_PATH
 
 from tensorflow.keras.layers import Dense, Flatten, Conv2D
@@ -40,7 +38,6 @@ def show_examples(generator, r, c):
         plt.subplot(r, c, i + 1)
     plt.imshow(image[i])
     plt.show()
-
 
 
 def main():
@@ -111,10 +108,6 @@ def main():
     # dataset = dataset_train.dropna()
 
     show_examples(train_generator, 3, 3)
-
-
-
-
 
 
 if __name__ == '__main__':
