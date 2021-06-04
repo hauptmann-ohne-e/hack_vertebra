@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from keras_preprocessing.image import ImageDataGenerator
 
-from config import CSV_TRAINING_PATH, CSV_VALIDATION_PATH, CSV_TEST_PATH, TEST_PATH
+from config import CSV_TRAINING_PATH, CSV_VALIDATION_PATH, CSV_TEST_PATH, TEST_PATH, VALIDATION_PATH, TRAINING_PATH
 
 from tensorflow.keras.layers import Dense, Flatten, Conv2D
 from tensorflow.keras import Model
@@ -37,8 +37,8 @@ def main():
                                 comment='\t', sep=',', skipinitialspace=True, header=0)
     dataset_validation = pd.read_csv(CSV_VALIDATION_PATH, na_values='?',
                                      comment='\t', sep=',', skipinitialspace=True, header=0)
-    #dataset_test = pd.read_csv(TEST_PATH, na_values='?',
-    #                           comment='\t', sep=',', skipinitialspace=True, header=0)
+    dataset_test = pd.read_csv(CSV_TEST_PATH, na_values='?',
+                              comment='\t', sep=',', skipinitialspace=True, header=0)
 
     dataset_train.tail()
 
@@ -49,7 +49,7 @@ def main():
 
     train_generator = datagen.flow_from_dataframe(
         dataframe=dataset_train,
-        directory=CSV_TRAINING_PATH,
+        directory=TRAINING_PATH,
         validate_filenames=False,
         x_col="img",
         y_col="grade",
@@ -61,7 +61,7 @@ def main():
 
     valid_generator = datagen.flow_from_dataframe(
         dataframe=dataset_validation,
-        directory=CSV_VALIDATION_PATH,
+        directory=VALIDATION_PATH,
         validate_filenames=False,
         x_col="img",
         y_col="grade",
@@ -71,16 +71,31 @@ def main():
         class_mode="raw",
         target_size=(32, 32))
 
-    test_generator = test_datagen.flow_from_directory(
+    test_generator = test_datagen.flow_from_dataframe(
+        dataframe=dataset_test,
         directory=TEST_PATH,
+        validate_filenames=False,
+        x_col="img",
         batch_size=32,
         seed=42,
-        shuffle=False,
+        shuffle=True,
         class_mode=None,
         target_size=(32, 32))
 
+    # test_generator = test_datagen.flow_from_directory(
+    #     directory=TEST_PATH,
+    #     batch_size=32,
+    #     seed=42,
+    #     shuffle=False,
+    #     class_mode=None,
+    #     target_size=(32, 32))
+
     # todo: clean data???
     # dataset = dataset_train.dropna()
+
+
+
+
 
 
 if __name__ == '__main__':
