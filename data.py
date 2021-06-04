@@ -1,23 +1,27 @@
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+
 from keras.applications.densenet import preprocess_input
 from keras_preprocessing.image import ImageDataGenerator
+from tensorflow.python.keras.models import save_model
 from tensorflow.python.keras.optimizer_v2.adam import Adam
 from sklearn.utils import class_weight
-
+from denseNK import create_denseNet
 from config import CSV_TRAINING_PATH, CSV_VALIDATION_PATH, CSV_TEST_PATH, TEST_PATH, VALIDATION_PATH, TRAINING_PATH
+from plotting import plotting_history_1, customize_axis_plotting
 
 
 def pr_function(image):
     img = np.array(image)
-    # img = preprocess_input(img)
     print(np.max(img))
     return img
 
 
 from tensorflow.keras.layers import Dense, Flatten, Conv2D
 from tensorflow.keras import Model
+
 
 # tf.keras.preprocessing.image_dataset_from_directory(
 #     directory,
@@ -35,10 +39,6 @@ from tensorflow.keras import Model
 #     follow_links=False,
 #     smart_resize=False,
 # )
-
-import matplotlib.pyplot as plt
-
-from denseNK import create_denseNet
 
 
 def show_examples(generator, r, c):
@@ -78,10 +78,8 @@ def main():
     dataset_test = pd.read_csv(CSV_TEST_PATH, na_values='?',
                                comment='\t', sep=',', skipinitialspace=True, header=0)
 
-    print(dataset_train.head(200))
-
     train_bsz = 32
-    epochs = 40
+    epochs = 20
     lr = 0.0005
 
     datagen = ImageDataGenerator(  # preprocessing_function=pr_function,
@@ -124,13 +122,12 @@ def main():
         x_col="img",
         batch_size=1,
         seed=42,
-        shuffle=True,
+        shuffle=False,
         class_mode=None,
         color_mode="rgb",
         target_size=(224, 224))
 
     show_examples(train_generator, 3, 3)
-
 
     print("Class weights: {}".format(class_weights))
 
@@ -141,8 +138,8 @@ def main():
     optimizer = Adam(learning_rate=0.0005)
     loss = "categorical_crossentropy"
     metrics = ["accuracy",
-               # tf.keras.metrics.AUC(curve="PR", name="APS"),
-               # tf.keras.metrics.AUC(curve="ROC", name="ROC-AUC"),
+               tf.keras.metrics.AUC(curve="PR", name="APS"),
+               tf.keras.metrics.AUC(curve="ROC", name="ROC-AUC"),
                ]
 
     net.compile(optimizer=optimizer,
@@ -163,6 +160,20 @@ def main():
                      shuffle=True,
                      # callbacks=callbacks
                      ).history
+
+    plotting_history_1(record, "training.png",
+                       f=customize_axis_plotting("loss"))
+
+    # Prediction
+    val_ids = list(test_generator.filenames)
+
+    val_ids = [elem.split('_')[0].split('/')[3] for elem in val_ids]
+    pred = test_generator.predict(test_generator, verbose=1)
+    df = pd.DataFrame(list(zip(val_ids, pred.reshape(-1).tolist())), columns=["ID", "Prediction"])
+    print(df.head())
+    df.to_csv('result_for_fold_val.csv',
+              index=False,
+              header=False)
 
 
 if __name__ == '__main__':
