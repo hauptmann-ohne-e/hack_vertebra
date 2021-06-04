@@ -6,6 +6,7 @@ from keras_preprocessing.image import ImageDataGenerator
 from tensorflow.keras.layers import Dense, Flatten, Conv2D
 from tensorflow.keras import Model
 
+
 # tf.keras.preprocessing.image_dataset_from_directory(
 #     directory,
 #     labels="inferred",
@@ -31,20 +32,21 @@ def main():
     url_train = r'F:\MOIN\hack_vertebra\Kiel-AI-Coding.Waterkant21.body-fractures-main\data\train\data.csv'
     url_validation = r'F:\MOIN\hack_vertebra\Kiel-AI-Coding.Waterkant21.body-fractures-main\data\val\data.csv'
     url_test = r'F:\MOIN\hack_vertebra\Kiel-AI-Coding.Waterkant21.body-fractures-main\data\test\data.csv'
-    #column_names = ['img', 'grade']
+    # column_names = ['img', 'grade']
 
     dataset_train = pd.read_csv(url_train, na_values='?',
-                          comment='\t', sep=',', skipinitialspace=True, header=0)
+                                comment='\t', sep=',', skipinitialspace=True, header=0)
     dataset_validation = pd.read_csv(url_validation, na_values='?',
-                          comment='\t', sep=',', skipinitialspace=True, header=0)
+                                     comment='\t', sep=',', skipinitialspace=True, header=0)
     dataset_test = pd.read_csv(url_test, na_values='?',
-                          comment='\t', sep=',', skipinitialspace=True, header=0)
+                               comment='\t', sep=',', skipinitialspace=True, header=0)
 
     dataset_train.tail()
 
-    #print(dataset_train)
+    # print(dataset_train)
 
-    datagen = ImageDataGenerator(rescale=1. / 255., validation_split=0.25)
+    datagen = ImageDataGenerator(rescale=1. / 65536.)
+    test_datagen = ImageDataGenerator(rescale=1. / 65536.)
 
     train_generator = datagen.flow_from_dataframe(
         dataframe=dataset_train,
@@ -56,6 +58,7 @@ def main():
         shuffle=True,
         class_mode="categorical",
         target_size=(32, 32))
+
     valid_generator = datagen.flow_from_dataframe(
         dataframe=dataset_validation,
         directory=url_validation,
@@ -66,7 +69,7 @@ def main():
         shuffle=True,
         class_mode="categorical",
         target_size=(32, 32))
-    test_datagen = ImageDataGenerator(rescale=1. / 255.)
+
     test_generator = test_datagen.flow_from_dataframe(
         dataframe=dataset_test,
         directory=url_test,
@@ -78,16 +81,8 @@ def main():
         class_mode=None,
         target_size=(32, 32))
 
-
     # todo: clean data???
-    #dataset = dataset_train.dropna()
-
-
-
-
-
-
-
+    # dataset = dataset_train.dropna()
 
 
 if __name__ == '__main__':
