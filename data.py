@@ -19,9 +19,18 @@ from sklearn.metrics import classification_report, multilabel_confusion_matrix
 from keras.losses import MeanAbsoluteError,MeanSquaredError
 
 train_bsz = 32
-epochs = 1
+epochs = 15
+
+
+
+
+
+
+
+
 lr = 0.0005
 regression = False
+rescale_regression = regression and False
 
 def pr_function(image):
     img = np.array(image)
@@ -66,6 +75,7 @@ def main():
     class_weights = class_weight.compute_class_weight('balanced',
                                                       np.unique(dataset_train['grade'].values),
                                                       dataset_train['grade'].values.astype(int))
+
     class_weights = dict(enumerate(np.array(class_weights)))
     #class_weights[1]*= 10.0;
     #class_weights[2]*= 10.0;
@@ -75,6 +85,10 @@ def main():
                                      comment='\t', sep=',', skipinitialspace=True, header=0).dropna()
     dataset_test = pd.read_csv(CSV_TEST_PATH, na_values='?',
                                comment='\t', sep=',', skipinitialspace=True, header=0)
+
+    if (rescale_regression):
+        dataset_train["grade"].replace({0.0: 0.0, 1.0: 20.0, 2.0: 30.0, 3.0: 50.0}, inplace=True)
+        dataset_validation["grade"].replace({0.0: 0.0, 1.0: 20.0, 2.0: 30.0, 3.0: 50.0}, inplace=True)
 
     if (not regression):
         dataset_train = pd.get_dummies(dataset_train, columns=['grade'])
@@ -128,8 +142,8 @@ def main():
         color_mode="rgb",
         target_size=(224, 224))
 
-    show_examples(train_generator, 4, 8)
-    show_examples(val_generator, 4, 8)
+    #show_examples(train_generator, 4, 8)
+    #show_examples(val_generator, 4, 8)
 
     print("Class weights: {}".format(class_weights))
 
@@ -139,7 +153,7 @@ def main():
     # Compile Model
     optimizer = Adam(learning_rate=0.0005)
     
-    loss_regression = MeanAbsoluteError() # MeanSquaredError
+    loss_regression = MeanSquaredError() #MeanAbsoluteError()
     loss_categorical = "categorical_crossentropy"
         
     metrics_categorical = ["accuracy",
@@ -213,15 +227,31 @@ def main():
     pred = net.predict(test_generator, verbose=1)
     
     if (not regression):
-        df = pd.DataFrame(list(zip(val_ids, np.argmax(pred, -1))), columns=["ID", "Prediction"])
+        df = pd.DataFrame(list(zip(val_ids, np.argmax(pred, -1))), columns=["image", "prediction"])
     else:
-        df = pd.DataFrame(list(zip(val_ids, pred)), columns=["ID", "Prediction"])
+        if (rescale_regression):
+            print(pred)
+            for i in range(len(pred)):
+                if (pred[i]<2):
+                    pred[i] = pred[i]/2.0
+                else:
+                    pred[i] = (pred[i]-10.0)/10.0 # might be casted to int()
+            print(pred)
+        else:
+            for i in range(len(pred)):
+                pred[i] = pred[i] # might be casted to int()
+
+        df = pd.DataFrame(list(zip(val_ids, pred.reshape(-1))), columns=["image", "prediction"])
+        
     print(df.head())
-    df.to_csv('results.csv',
+    df.to_csv(os.path.join(OUT_PATH,'results.csv'),
               index=False,
               header=False)
-
-
+           
+    df.to_json(os.path.join(OUT_PATH,'results.json'),
+               orient="records",
+              )
+    
 if __name__ == '__main__':
     main()
     pass
