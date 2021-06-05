@@ -17,16 +17,9 @@ def create_denseNet(use_imagenet: bool = True,
                     input_shape: tuple = (224, 224, 3),
                     trainable: bool = False,
                     num_neurons: int = 256,
-                    dropout: float = 0.3):
-    """
-
-    :param use_imagenet:
-    :param input_shape:
-    :param trainable:
-    :param num_neurons:
-    :param dropout:
-    :return:
-    """
+                    num_neurons2: int = 64,
+                    dropout: float = 0.3,
+                    regression: bool = False):
 
     weights = None
 
@@ -57,7 +50,11 @@ def create_denseNet(use_imagenet: bool = True,
     x = Dense(units=num_neurons, name='FC-Layer', activation='relu')(x)
     if dropout > 0.0:
         x = Dropout(dropout)(x)
-    preds = Dense(4, activation="softmax")(x)
+    #x = Dense(units=num_neurons2, name='FC-Layer2', activation='relu')(x)
+    if (regression): #one node without activation
+        preds = Dense(1)(x)
+    else: #four classes
+        preds = Dense(4, activation="softmax")(x)
 
     custom_model = Model(inputs=densenet_without_fc.input, outputs=preds)
     return custom_model

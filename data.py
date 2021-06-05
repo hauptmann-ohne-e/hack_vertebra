@@ -48,11 +48,13 @@ from tensorflow.keras import Model
 def show_examples(generator, r, c):
     x, y = generator.next()
     image = x
+    label = y
     print(image.shape)
     print(image[0])
     plt.figure(figsize=(20, 20))
     for i in range(0, (r * c)):
         plt.subplot(r, c, i + 1)
+        plt.title(label[i])
         plt.imshow(image[i])
     plt.show()
 
