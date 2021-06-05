@@ -50,7 +50,7 @@ def create_denseNet(use_imagenet: bool = True,
     x = Dense(units=num_neurons, name='FC-Layer', activation='relu')(x)
     if dropout > 0.0:
         x = Dropout(dropout)(x)
-    #x = Dense(units=num_neurons2, name='FC-Layer2', activation='relu')(x)
+    x = Dense(units=num_neurons2, name='FC-Layer2', activation='relu')(x)
     if (regression): #one node without activation
         preds = Dense(1)(x)
     else: #four classes
