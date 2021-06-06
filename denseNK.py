@@ -14,13 +14,12 @@ from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Conv2D, Batch
 
 
 def create_denseNet(use_imagenet: bool = True,
-                    input_shape: tuple = (224, 224, 3),
+                    input_shape: tuple = (112, 112, 3),
                     trainable: bool = False,
                     num_neurons: int = 256,
                     num_neurons2: int = 64,
                     dropout: float = 0.3,
                     regression: bool = False):
-
     weights = None
 
     if use_imagenet:
@@ -39,7 +38,7 @@ def create_denseNet(use_imagenet: bool = True,
     if not trainable:
         # freeze the layer in Densnet121
         for idx, layer in enumerate(densenet_without_fc.layers):
-            if idx < 137: #53
+            if idx < 137:  # 53
                 layer.trainable = False
 
     # Creating dictionary that maps layer names to the layers
@@ -51,9 +50,9 @@ def create_denseNet(use_imagenet: bool = True,
     if dropout > 0.0:
         x = Dropout(dropout)(x)
     x = Dense(units=num_neurons2, name='FC-Layer2', activation='relu')(x)
-    if (regression): #one node without activation
+    if regression:  # one node without activation
         preds = Dense(1)(x)
-    else: #four classes
+    else:  # four classes
         preds = Dense(4, activation="softmax")(x)
 
     custom_model = Model(inputs=densenet_without_fc.input, outputs=preds)
