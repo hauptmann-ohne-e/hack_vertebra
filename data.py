@@ -18,8 +18,10 @@ from sklearn.metrics import classification_report, multilabel_confusion_matrix
 
 from keras.losses import MeanAbsoluteError,MeanSquaredError
 
+from td_helper import show_examples,confusion,label_regression_scale,pred_regression_scaleback
+
 train_bsz = 32
-epochs = 15
+epochs = 5
 
 
 
@@ -40,20 +42,6 @@ def pr_function(image):
 
 from tensorflow.keras.layers import Dense, Flatten, Conv2D
 from tensorflow.keras import Model
-
-def show_examples(generator, r, c):
-    x, y = generator.next()
-    image = x
-    label = y
-    print(image.shape)
-    print(image[0])
-    plt.figure(figsize=(20, 20))
-    for i in range(0, (r * c)):
-        plt.subplot(r, c, i + 1)
-        plt.title(label[i])
-        plt.imshow(image[i])
-    plt.show()
-
 
 def main():
     # Make numpy printouts easier to read.
@@ -123,7 +111,7 @@ def main():
         validate_filenames=False,
         x_col="img",
         y_col=y_col,
-        batch_size=train_bsz, #1
+        batch_size=1, #train_bsz
         seed=42,
         shuffle=True,
         class_mode="raw",
@@ -201,7 +189,9 @@ def main():
     plotting_history_1(record, os.path.join(OUT_PATH,"training.png"),
                        f=customize_axis_plotting("loss"))
 
+    #TD This combination (!!!) will cause internal reset of index order without shuffling.
     val_generator.shuffle = False
+    val_generator.index_array = None
 
     if (not regression):
         test_Y = np.array([np.where(r == 1)[0][0] for r in val_generator.labels])
@@ -212,22 +202,22 @@ def main():
         #print(np.average(test_Y-np.argmax(pred,-1)))
     
         t = pd.DataFrame(data=[test_Y,np.argmax(pred,-1),test_Y-np.argmax(pred,-1)]).transpose()
-        t.to_csv("t.csv")    
+        t.to_csv("Compare_on_Val.csv")    
 
         report = classification_report(test_Y, np.argmax(pred, -1), output_dict=True)
         df = pd.DataFrame(report).transpose()
         p = computeMeanAveragePrecision(test_Y, net.predict(val_generator))
         df["Mean_average_percision"] = np.concatenate([p[1], np.array([-1, -1, p[0]])])
         df.to_csv("results_on_val.csv")
+        print(confusion(4,np.argmax(pred,-1),test_Y,True))
 
-    # Prediction
-    val_ids = list(test_generator.filenames)
-    #print(val_ids)
+# Prediction
+    test_ids = list(test_generator.filenames)
 
     pred = net.predict(test_generator, verbose=1)
     
     if (not regression):
-        df = pd.DataFrame(list(zip(val_ids, np.argmax(pred, -1))), columns=["image", "prediction"])
+        df = pd.DataFrame(list(zip(test_ids, np.argmax(pred, -1))), columns=["image", "prediction"])
     else:
         if (rescale_regression):
             print(pred)
@@ -241,9 +231,16 @@ def main():
             for i in range(len(pred)):
                 pred[i] = pred[i] # might be casted to int()
 
-        df = pd.DataFrame(list(zip(val_ids, pred.reshape(-1))), columns=["image", "prediction"])
+        df = pd.DataFrame(list(zip(test_ids, pred.reshape(-1))), columns=["image", "prediction"])
         
     print(df.head())
+
+    if (not regression):
+        print(confusion(4,np.argmax(pred,-1)))
+    else:
+        print(confusion(4,np.ndarray.flatten(pred)))
+
+    
     df.to_csv(os.path.join(OUT_PATH,'results.csv'),
               index=False,
               header=False)
